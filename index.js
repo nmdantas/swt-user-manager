@@ -7,7 +7,6 @@
 
 'use strict';
 
-var framework   = require('swt-framework');
 var userRouter  = require('./controllers/user');
 
 module.exports = {
