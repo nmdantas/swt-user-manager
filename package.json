@@ -1,0 +1,22 @@
+{
+  "name": "swt-user-manager",
+  "version": "0.0.0",
+  "description": "User manager framework for all SWT applications",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nmdantas/swt-user-manager.git"
+  },
+  "author": "Nicholas M. Dantas",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/nmdantas/swt-user-manager/issues"
+  },
+  "homepage": "https://github.com/nmdantas/swt-user-manager#readme",
+  "dependencies": {
+    "swt-framework": "git+https://github.com/nmdantas/swt-framework.git"
+  }
+}
