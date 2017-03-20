@@ -7,12 +7,12 @@
 
 'use strict';
 
-var TIMEOUT = 1000 * 60 * 20; // 20 minutos
+var TIMEOUT = process.env.CACHE_MAX_AGE; /* Tempo Default no Cache Atual - 10 minutos */
 
 var router      = require('express').Router();
-var dataAccess  = require('./../data-access')();
-var signature   = require('swt-framework')().signature;
-var logManager  = require('./../services/log')();
+var framework   = require('swt-framework');
+var dataAccess  = require('./../data-access');
+var logManager  = framework.logger;
 
 router.post('/login', preValidation, checkPassword, checkSession, getUserAccess, formatResponse, createAccessToken);
 
@@ -40,7 +40,7 @@ function checkPassword(req, res, next) {
         error = error || new Error();
         error.code = 'US001';
 
-        logManager.saveError(error, 'userController.login');
+        logManager.error(error, 'swtUserManager.userController.login');
                 
         next(error);
     }
@@ -61,7 +61,7 @@ function checkSession(req, res, next) {
     }
 
     var errorCallback = function (error) {
-        logManager.saveError(error, 'userController.login');
+        logManager.error(error, 'swtUserManager.userController.login');
         
         next(error);
     }
@@ -77,8 +77,6 @@ function checkSession(req, res, next) {
 function getUserAccess(req, res, next) {
     // Caso possua esta propriedade na requisicao significa que ja existe sessao    
     if (req.accessToken && global.CacheManager.has(req.accessToken)) {
-        //logManager.saveDebug('Get User Access From Cache', 'userController.login');
-
         var sessionInfo = global.CacheManager.get(req.accessToken);
         sessionInfo.update = true;
 
@@ -87,8 +85,6 @@ function getUserAccess(req, res, next) {
 
         res.json(sessionInfo);
     } else {
-        //logManager.saveDebug('Get User Access From Database', 'userController.login');
-
         var successCallback = function(results) {
             // Se nao houver retorno significa que o usuario não tem
             // permissão para acessar a aplicação
@@ -104,7 +100,7 @@ function getUserAccess(req, res, next) {
         }
 
         var errorCallback = function (error) {
-            logManager.saveError(error, 'userController.login');
+            logManager.error(error, 'swtUserManager.userController.login');
             next(error);
         }
 
@@ -193,7 +189,7 @@ function formatResponse(req, res, next) {
 }
 
 function createAccessToken(req, res, next) {
-    var accessToken = signature(req.body.username);
+    var accessToken = framework.security.signature(req.body.username);
     req.data.accessToken = accessToken;
 
     global.CacheManager.set(accessToken, req.data, req.body.keepAlive ? Infinity : TIMEOUT);

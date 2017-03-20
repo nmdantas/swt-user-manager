@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/nmdantas/swt-user-manager#readme",
   "dependencies": {
-    "swt-framework": "git+https://github.com/nmdantas/swt-framework.git"
+    "body-parser": "^1.17.1",
+    "swt-framework": "git+https://e8c7eab2825e7ff05108bbb1c84fdafbebf8b4b8:x-oauth-basic@github.com/nmdantas/swt-framework.git"
   }
 }
