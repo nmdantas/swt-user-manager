@@ -77,7 +77,7 @@ function checkSession(req, res, next) {
 
     var userInfo = {
         username: req.body.username,
-        applicationId: req.body.applicationId
+        applicationToken: req.headers.authorization || '' /* Formatar */
     }
 
     dataAccess.user.session.exists(userInfo, successCallback, errorCallback);
@@ -114,7 +114,7 @@ function getUserAccess(req, res, next) {
 
         var userInfo = {
             id: req.data,
-            applicationId: req.body.applicationId
+            applicationToken: req.headers.authorization || '' /* Formatar */
         }
         
         // Este metodo do data-access deve chamar o next
@@ -132,7 +132,7 @@ function formatResponse(req, res, next) {
         roles: [],
         access: [],
         application: {
-            id: req.body.applicationId
+            id: results[0].APP_TOKEN
         }
     };
 

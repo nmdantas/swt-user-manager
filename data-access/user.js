@@ -46,7 +46,8 @@ function get(userInfo, successCallback, errorCallback) {
             return;
         }
 
-        var query = 'SELECT	USER_ID, ' +
+        var query = 'SELECT	APP_TOKEN ' +
+                    '       USER_ID, ' +
                     '       USER_EMAIL, ' +
                     '       USER_ROLE, ' +
                     '       USER_NAME, ' +
@@ -72,9 +73,9 @@ function get(userInfo, successCallback, errorCallback) {
                     '       MENU_ICON ' +
                     'FROM swtuserdb_dev.VIEW_USER_ACCESS ' +
                     'WHERE USER_ID = ? ' +
-                        'AND APP_ID = ?'
+                        'AND APP_TOKEN = ?'
 
-        connection.query(query, [userInfo.id, userInfo.applicationId], function (error, results, fields) {
+        connection.query(query, [userInfo.id, userInfo.applicationToken], function (error, results, fields) {
             connection.release();
 
             if (error) {
@@ -204,11 +205,12 @@ function checkSession(userInfo, successCallback, errorCallback) {
         }
 
         var query = 'SELECT	SESSION_KEY ' +
-                    'FROM swtuserdb_dev.USER_SESSION ' +
-                    'WHERE EMAIL = ? ' +
-                        'AND APP_ID = ?'
+                    'FROM swtuserdb_dev.USER_SESSION        AS US ' +
+                    '   INNER JOIN swtdb_dev.APPLICATIONS   AS APP ON APP.APP_ID = US.APP_ID ' +
+                    'WHERE US.EMAIL = ? ' +
+                        'AND APP.APPLICATION_TOKEN = ?'
 
-        connection.query(query, [userInfo.username, userInfo.applicationId], function (error, results, fields) {
+        connection.query(query, [userInfo.username, userInfo.applicationToken], function (error, results, fields) {
             connection.release();
 
             if (error) {
