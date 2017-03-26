@@ -24,13 +24,47 @@ module.exports = {
     ],
     logout: [
         logout
-    ]
+    ],
+    list: [
+
+    ],
+    create:[
+
+    ],
+    update: [
+
+    ],
+    delete: [
+
+    ],
+    password: {
+        update: [
+
+        ],
+        reset: [
+            
+        ]
+    }
 };
 
 function preValidation(req, res, next) {
-    if (!req.body.username || !req.body.password) {
-        var error = new Error();
-        error.code = 'US004';
+    var constraints = {
+        username: {
+            presence: true
+        },
+        password: {
+            presence: true,
+            length: {
+                minimum: 6,
+                message: 'deve possuir ao menos 6 caracteres'
+            }
+        }
+    };
+
+    var validationErrors = framework.common.validate(req.body, constraints);
+
+    if (validationErrors) {
+        var error = new framework.models.SwtError({code: 'US004', httpCode: 401, details: validationErrors});
 
         next(error);
     } else {
@@ -40,9 +74,18 @@ function preValidation(req, res, next) {
 
 function checkPassword(req, res, next) {
     var successCallback = function(result) {
-        req.data = result;
-        
-        next();
+        req.data = result.ID;
+
+        var salt = result.SALT;
+        var hash = result.HASH;
+        var givenPassword = framework.security.signature.password(salt, req.body.password);
+
+        // Verifica se o hash é compativel
+        if (givenPassword === hash) {
+            next();
+        } else {
+            errorCallback(new Error('Hash incompativel'));
+        }
     }
 
     var errorCallback = function (error) {        
@@ -55,10 +98,10 @@ function checkPassword(req, res, next) {
     }
 
     var userInfo = {
-        username: req.body.username,
-        password: req.body.password
+        username: req.body.username
     }
 
+    // Recupera o SALT armazenado no banco para verificar a senha
     dataAccess.user.checkPassword(userInfo, successCallback, errorCallback);
 }
 
@@ -77,7 +120,7 @@ function checkSession(req, res, next) {
 
     var userInfo = {
         username: req.body.username,
-        applicationToken: req.headers.authorization || '' /* Formatar */
+        applicationToken: framework.common.parseAuthHeader(req.headers.authorization).token
     }
 
     dataAccess.user.session.exists(userInfo, successCallback, errorCallback);
@@ -114,7 +157,7 @@ function getUserAccess(req, res, next) {
 
         var userInfo = {
             id: req.data,
-            applicationToken: req.headers.authorization || '' /* Formatar */
+            applicationToken: framework.common.parseAuthHeader(req.headers.authorization).token
         }
         
         // Este metodo do data-access deve chamar o next
@@ -197,7 +240,7 @@ function formatResponse(req, res, next) {
 }
 
 function createAccessToken(req, res, next) {
-    var accessToken = framework.security.signature(req.body.username);
+    var accessToken = framework.security.signature.token(req.body.username);
     req.data.accessToken = accessToken;
 
     global.CacheManager.set(accessToken, req.data, req.body.keepAlive ? Infinity : TIMEOUT);

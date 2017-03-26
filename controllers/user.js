@@ -17,24 +17,24 @@ router.post('/login', business.login);
 router.post('/logout', business.logout);
 
 // Obtem todos usuarios
-router.get('/', framework.middlewares.authorize('Admin'));
+router.get('/', framework.security.authorize('Admin'), business.list);
 // Cria um novo usuario
-router.post('/', framework.middlewares.authorize('Admin'));
+router.post('/', framework.security.authorize('Admin'), business.create);
 // Atualiza todos os usuarios
-router.put('/', framework.middlewares.authorize('Admin'));
+router.put('/', framework.security.authorize('Admin'), business.update);
 // Apaga/Desativa todos os usuarios
-router.delete('/', framework.middlewares.authorize('Admin'));
+router.delete('/', framework.security.authorize('Admin'), business.delete);
 
 // Obtem o usuario especifico
-router.get('/:id');
+router.get('/:id', business.list);
 // Atualiza o usuario especifico
-router.put('/:id'); 
+router.put('/:id', business.update); 
 // Apaga/Desativa o usuario especifico
-router.delete(':/id');
+router.delete(':/id', business.delete);
 
 // Atualiza a senha
-router.put('/:id/password');
+router.put('/:id/password', business.password.update);
 // Reinicia senha
-router.patch('/:id/password');
+router.patch('/:id/password', business.password.reset);
 
 module.exports = router;
