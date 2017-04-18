@@ -1,10 +1,12 @@
 {
   "name": "swt-user-manager",
   "version": "0.0.0",
-  "description": "User manager framework for all SWT applications",
+  "description": "User manager framework for any SWT applications",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "standalone": "node index.js --standalone",
+    "deploy": "gcloud app deploy app.yaml"
   },
   "repository": {
     "type": "git",
@@ -18,6 +20,6 @@
   "homepage": "https://github.com/nmdantas/swt-user-manager#readme",
   "dependencies": {
     "body-parser": "^1.17.1",
-    "swt-framework": "git+https://e8c7eab2825e7ff05108bbb1c84fdafbebf8b4b8:x-oauth-basic@github.com/nmdantas/swt-framework.git"
+    "swt-framework": "^0.1.0"
   }
 }

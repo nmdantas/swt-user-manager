@@ -26,13 +26,13 @@ module.exports = {
         logout
     ],
     list: [
-
+        list
     ],
     create:[
-
+        insertOrUpdate
     ],
     update: [
-
+        insertOrUpdate
     ],
     delete: [
 
@@ -47,6 +47,45 @@ module.exports = {
     }
 };
 
+function formatUserData(result) {
+    var formattedResponse = {
+        user: {
+            id: 0,
+            email: null,
+            photo: null,
+            creation: null,
+            details: {},
+            address: {}
+        }
+    };
+
+    formattedResponse.user.id = result.USER_ID;
+    formattedResponse.user.email = result.USER_EMAIL;
+    formattedResponse.user.photo = result.USER_PHOTO;
+    formattedResponse.user.creation = result.USER_CREATION;
+    
+    formattedResponse.user.details.name = result.USER_NAME;
+    formattedResponse.user.details.lastname = result.USER_LASTNAME;
+    formattedResponse.user.details.nickname = result.USER_NICKNAME;
+    formattedResponse.user.details.birthday = result.USER_BIRTHDAY;
+    formattedResponse.user.details.document = result.USER_DOCUMENT;
+    formattedResponse.user.details.photo = result.USER_PHOTO;
+    formattedResponse.user.details.creation = result.USER_CREATION;
+
+    formattedResponse.user.address.zipCode = result.ADDRESS_ZIPCODE;
+    formattedResponse.user.address.place = result.ADDRESS_ADDRESS;
+    formattedResponse.user.address.district = result.ADDRESS_DISTRICT;
+    formattedResponse.user.address.city = result.ADDRESS_CITY;
+    formattedResponse.user.address.state = result.ADDRESS_STATE;
+    formattedResponse.user.address.country = result.ADDRESS_COUNTRY;    
+    formattedResponse.user.address.number = result.ADDRESS_NUMBER;
+    formattedResponse.user.address.complement = result.ADDRESS_COMPLEMENT;
+    formattedResponse.user.address.latitude = result.ADDRESS_LATITUDE;
+    formattedResponse.user.address.longitude = result.ADDRESS_LONGITUDE;
+
+    return formattedResponse;
+}
+
 function preValidation(req, res, next) {
     var constraints = {
         username: {
@@ -55,13 +94,13 @@ function preValidation(req, res, next) {
         password: {
             presence: true,
             length: {
-                minimum: 6,
-                message: 'deve possuir ao menos 6 caracteres'
+                minimum: 3,
+                message: 'deve possuir ao menos 3 caracteres'
             }
         }
     };
 
-    var validationErrors = framework.common.validate(req.body, constraints);
+    var validationErrors = framework.common.validation.validate(req.body, constraints);
 
     if (validationErrors) {
         var error = new framework.models.SwtError({code: 'US004', httpCode: 401, details: validationErrors});
@@ -77,7 +116,7 @@ function checkPassword(req, res, next) {
         req.data = result.ID;
 
         var salt = result.SALT;
-        var hash = result.HASH;
+        var hash = result.TOKEN;
         var givenPassword = framework.security.signature.password(salt, req.body.password);
 
         // Verifica se o hash é compativel
@@ -139,11 +178,10 @@ function getUserAccess(req, res, next) {
         var successCallback = function(results) {
             // Se nao houver retorno significa que o usuario não tem
             // permissão para acessar a aplicação
-            if (results.length === 0) {                
-                var error = new Error();
-                error.code = 'US009';
+            if (results.length === 0) {
+                var error = new framework.models.SwtError({code: 'US008', httpCode: 403});
 
-                next(error);                
+                next(error);
             } else {
                 req.data = results;
                 next();
@@ -161,44 +199,22 @@ function getUserAccess(req, res, next) {
         }
         
         // Este metodo do data-access deve chamar o next
-        dataAccess.user.get(userInfo, successCallback, errorCallback);
+        dataAccess.user.getAccess(userInfo, successCallback, errorCallback);
     }
 }
 
 function formatResponse(req, res, next) {
-    var results = req.data;
-    var formattedResponse = {
-        user: {
-            details: {},
-            address: {}
-        },
-        roles: [],
-        access: [],
-        application: {
-            id: results[0].APP_TOKEN
-        }
-    };
-
     // Se chegou ate esse ponto, ao menos uma linha existe nos resultados
     // Caso contrario seria resultado 403
-    formattedResponse.user.id = results[0].USER_ID;
-    formattedResponse.user.email = results[0].USER_EMAIL;
-    
-    formattedResponse.user.details.name = results[0].USER_NAME;
-    formattedResponse.user.details.lastname = results[0].USER_LASTNAME;
-    formattedResponse.user.details.nickname = results[0].USER_NICKNAME;
-    formattedResponse.user.details.birthday = results[0].USER_BIRTHDAY;
-    formattedResponse.user.details.document = results[0].USER_DOCUMENT;
-
-    formattedResponse.user.address.zipCode = results[0].ADDRESS_ZIPCODE;
-    formattedResponse.user.address.address = results[0].ADDRESS_ADDRESS;
-    formattedResponse.user.address.district = results[0].ADDRESS_DISTRICT;
-    formattedResponse.user.address.city = results[0].ADDRESS_CITY;
-    formattedResponse.user.address.state = results[0].ADDRESS_STATE;
-    formattedResponse.user.address.latitude = results[0].ADDRESS_LATITUDE;
-    formattedResponse.user.address.longitude = results[0].ADDRESS_LONGITUDE;
-    formattedResponse.user.address.number = results[0].ADDRESS_NUMBER;
-    formattedResponse.user.address.complement = results[0].ADDRESS_COMPLEMENT;
+    var results = req.data;
+    var formattedResponse = formatUserData(results[0]);
+    formattedResponse.application = {
+        id: results[0].APP_ID,
+        name: results[0].APP_NAME,
+        token: results[0].APP_TOKEN
+    };
+    formattedResponse.roles = [];
+    formattedResponse.access = [];    
 
     for (var i = 0; i < results.length; i++) {
         // Roles de Acesso
@@ -288,4 +304,156 @@ function logout(req, res, next) {
     } else {
         innerNextFunction('Invalid Header');
     }
+}
+
+function list(req, res, next) {
+    var auth = framework.common.parseAuthHeader(req.headers.authorization);
+    var parameters = {
+        user: req.params.id,
+        token: null        
+    };
+
+    // Codição mandatória, para a rota que especificada, ignora o token do usuario logado e da aplicação
+    if (req.route.path === '/:id/applications/:token?') {
+        parameters.token = req.params.token;
+    }
+    // Caso a requisição tenha sido feita por um usuario logado
+    // Retornara os usuários da aplicação correspondente
+    else if (auth.type === 'basic') {
+        if (global.CacheManager.has(auth.token)) {
+            parameters.token = global.CacheManager.get(auth.token).application.token;
+        } else {
+            parameters.token = -1; // Anula a pesquisa
+        }
+    }
+    // Caso a requisição apenas contenha o token da aplicação, 
+    // usará este como filtro
+    else if (auth.type === 'app') {
+        parameters.token = auth.token;
+    }
+
+    var successCallback = function(results) {        
+        // Se chegou ate esse ponto, ao menos uma linha existe nos resultados
+        // Caso contrario seria resultado 403
+        if (results.length === 0) {
+            var error = new framework.models.SwtError({httpCode: 404, message: 'Not found', details: { message: 'User or Application not found'}});
+
+            next(error);
+
+            return;
+        }
+
+        var formattedResponse = {};
+
+        // Verifica se deve apenas retornar os dados da aplicação
+        if (req.route.path === '/:id/applications/:token?') {
+            formattedResponse = [];
+
+            for (var i = 0; i < results.length; i++) {
+                // Aplicações
+                // Verifica se a aplicação já está presente na lista
+                if (!formattedResponse.any({ id: results[i].APP_ID})) {
+                    formattedResponse.push({
+                        id: results[i].APP_ID,
+                        name: results[i].APP_NAME,
+                        token: results[i].APP_TOKEN
+                    });
+                }
+            }
+        } 
+        // Todos os usuários
+        else if (req.route.path === '/') {
+            formattedResponse = [];
+
+            // Usuários
+            // Verifica se o usuário já está presente na lista
+            for (var i = 0; i < results.length; i++) {
+                if (!formattedResponse.any({ id: results[i].USER_ID})) {
+                    var user = formatUserData(results[i]).user;
+                    user.applications = results.where({ USER_ID: user.id }).select({
+                        "id": "APP_ID",
+                        "name": "APP_NAME",
+                        "token": "APP_TOKEN"
+                    });
+
+                    formattedResponse.push(user);
+                }
+            }
+        }
+        // Apenas um usuário 
+        else {
+            formattedResponse = formatUserData(results[0]).user;
+            formattedResponse.applications = results.select({
+                "id": "APP_ID",
+                "name": "APP_NAME",
+                "token": "APP_TOKEN"
+            });
+        }
+        
+        res.json(formattedResponse);
+        
+        next();
+    }
+
+    var errorCallback = function (error) {
+        logManager.error(error, 'swtUserManager.userController.list');
+        
+        next(error);
+    }
+
+    dataAccess.user.get(parameters, successCallback, errorCallback);
+}
+
+function insertUpdatePreValidation(req, res, next) {
+    var constraints = framework.common.validation.requiredFor([
+        'firstName',
+        'lastName',
+        'email',
+        'password',
+        'birthday',
+        'document'
+    ]);
+
+    var validationErrors = framework.common.validation.validate(req.body, constraints);
+
+    if (validationErrors) {
+        var error = new framework.models.SwtError({code: 'US004', httpCode: 400, details: validationErrors});
+
+        next(error);
+    } else {
+        next();
+    }
+}
+
+function insertOrUpdate(req, res, next) {
+    var successCallback = function(results) {
+        res.json({
+            links: [
+                {
+                    rel: 'self',
+                    href: '/api/v0/users/' + results.ID
+                }
+            ]
+        });
+
+        next();
+    }
+
+    var errorCallback = function (error) {
+        logManager.error(error, 'swtUserManager.userController.insertOrUpdate');
+        next(error);
+    }
+
+    // Adiciona o id que pode ter sido passado pela rota
+    req.body.id = req.params.id;
+
+    // Verifica se deve criptografar a senha
+    // Apenas criptografa a senha se for um insert
+    if (!req.body.id) {
+        req.body.salt = framework.security.signature.salt();
+        req.body.password = framework.security.signature.password(req.body.salt, req.body.password);
+    }
+    
+    // Este metodo do data-access deve chamar o next
+    dataAccess.user.insertOrUpdate(req.body, successCallback, errorCallback);
 }
