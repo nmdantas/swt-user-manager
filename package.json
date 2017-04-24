@@ -20,6 +20,7 @@
   "homepage": "https://github.com/nmdantas/swt-user-manager#readme",
   "dependencies": {
     "body-parser": "^1.17.1",
+    "sequelize": "^3.30.4",
     "swt-framework": "^0.1.0"
   }
 }

@@ -8,7 +8,7 @@
 'use strict';
 
 // Inicia as variaveis de ambiente
-if (process.argv.indexOf("--standalone") > -1) {
+if (true/*process.argv.indexOf("--standalone") > -1*/) {
     require('dotenv').config();
 
     // Sobe a aplicação

@@ -23,6 +23,42 @@ const CONNECTION_CONFIG = {
 
 var connectionPool = database.createPool(CONNECTION_CONFIG);
 
-module.exports = {
-    user: userService(connectionPool)
+var Sequelize = require('sequelize');
+
+var defaultDatabase = new Sequelize('swtdb_dev', process.env.DB_USER, process.env.DB_PASS, {
+    host: process.env.DB_HOST,
+    dialect: 'mysql',
+    pool: {
+        min: 0,
+        max: process.env.DB_POOL_LIMIT
+    }
+});
+
+var userDatabase = new Sequelize(process.env.DB_BASE, process.env.DB_USER, process.env.DB_PASS, {
+    host: process.env.DB_HOST,
+    dialect: 'mysql',
+    pool: {
+        min: 0,
+        max: process.env.DB_POOL_LIMIT
+    }
+});
+
+// Models
+var ApplicationSchema = defaultDatabase.import('./models/application');
+var UserSchema = userDatabase.import('./models/user');
+var UserSessionSchema = userDatabase.import('./models/userSession');
+var ViewUserAccess = userDatabase.import('./models/viewUserAccess');
+
+module.exports = {    
+    user: userService(connectionPool),
+    User: UserSchema,
+    Session: UserSessionSchema,
+    Application: ApplicationSchema,
+    databases: {
+        user: userDatabase,
+        default: defaultDatabase        
+    },
+    views: {
+        userAccess: ViewUserAccess
+    }
 };

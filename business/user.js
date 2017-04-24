@@ -9,7 +9,7 @@
 
 var TIMEOUT = process.env.CACHE_MAX_AGE; /* Tempo Default no Cache Atual - 10 minutos */
 
-var dataAccess  = require('./../data-access');
+var accessLayer  = require('./../data-access');
 var framework   = require('swt-framework');
 var logManager  = framework.logger;
 
@@ -59,46 +59,35 @@ function formatUserData(result) {
         }
     };
 
-    formattedResponse.user.id = result.USER_ID;
-    formattedResponse.user.email = result.USER_EMAIL;
-    formattedResponse.user.photo = result.USER_PHOTO;
-    formattedResponse.user.creation = result.USER_CREATION;
+    formattedResponse.user.id = result.userId;
+    formattedResponse.user.email = result.userEmail;
+    formattedResponse.user.photo = result.userPhoto;
+    formattedResponse.user.creation = result.userCreation;
     
-    formattedResponse.user.details.name = result.USER_NAME;
-    formattedResponse.user.details.lastname = result.USER_LASTNAME;
-    formattedResponse.user.details.nickname = result.USER_NICKNAME;
-    formattedResponse.user.details.birthday = result.USER_BIRTHDAY;
-    formattedResponse.user.details.document = result.USER_DOCUMENT;
-    formattedResponse.user.details.photo = result.USER_PHOTO;
-    formattedResponse.user.details.creation = result.USER_CREATION;
+    formattedResponse.user.details.name = result.userName;
+    formattedResponse.user.details.lastname = result.userLastname;
+    formattedResponse.user.details.nickname = result.userNickname;
+    formattedResponse.user.details.birthday = result.userBirthday;
+    formattedResponse.user.details.document = result.userDocument;
+    formattedResponse.user.details.photo = result.userPhoto;
+    formattedResponse.user.details.creation = result.userCreation;
 
-    formattedResponse.user.address.zipCode = result.ADDRESS_ZIPCODE;
-    formattedResponse.user.address.place = result.ADDRESS_ADDRESS;
-    formattedResponse.user.address.district = result.ADDRESS_DISTRICT;
-    formattedResponse.user.address.city = result.ADDRESS_CITY;
-    formattedResponse.user.address.state = result.ADDRESS_STATE;
-    formattedResponse.user.address.country = result.ADDRESS_COUNTRY;    
-    formattedResponse.user.address.number = result.ADDRESS_NUMBER;
-    formattedResponse.user.address.complement = result.ADDRESS_COMPLEMENT;
-    formattedResponse.user.address.latitude = result.ADDRESS_LATITUDE;
-    formattedResponse.user.address.longitude = result.ADDRESS_LONGITUDE;
+    formattedResponse.user.address.zipCode = result.addressZipcode;
+    formattedResponse.user.address.place = result.addressAddress;
+    formattedResponse.user.address.district = result.addressDistrict;
+    formattedResponse.user.address.city = result.addressCity;
+    formattedResponse.user.address.state = result.addressState;
+    formattedResponse.user.address.country = result.addressCountry;    
+    formattedResponse.user.address.number = result.addressNumber;
+    formattedResponse.user.address.complement = result.addressComplement;
+    formattedResponse.user.address.latitude = result.addressLatitude;
+    formattedResponse.user.address.longitude = result.addressLongitude;
 
     return formattedResponse;
 }
 
 function preValidation(req, res, next) {
-    var constraints = {
-        username: {
-            presence: true
-        },
-        password: {
-            presence: true,
-            length: {
-                minimum: 3,
-                message: 'deve possuir ao menos 3 caracteres'
-            }
-        }
-    };
+    var constraints = framework.common.validation.requiredFor('username', 'password');
 
     var validationErrors = framework.common.validation.validate(req.body, constraints);
 
@@ -113,21 +102,22 @@ function preValidation(req, res, next) {
 
 function checkPassword(req, res, next) {
     var successCallback = function(result) {
-        req.data = result.ID;
+        result = result || {};
+        req.data = result.id;
 
-        var salt = result.SALT;
-        var hash = result.TOKEN;
+        var salt = result.salt;
+        var hash = result.token;
         var givenPassword = framework.security.signature.password(salt, req.body.password);
 
         // Verifica se o hash é compativel
         if (givenPassword === hash) {
             next();
         } else {
-            errorCallback(new Error('Hash incompativel'));
+            errorCallback(new framework.models.SwtError({ httpCode: 401 }));
         }
     }
 
-    var errorCallback = function (error) {        
+    var errorCallback = function (error) {
         error = error || new Error();
         error.code = 'US001';
 
@@ -136,17 +126,17 @@ function checkPassword(req, res, next) {
         next(error);
     }
 
-    var userInfo = {
-        username: req.body.username
-    }
-
-    // Recupera o SALT armazenado no banco para verificar a senha
-    dataAccess.user.checkPassword(userInfo, successCallback, errorCallback);
+    accessLayer.User.findOne({
+        attributes: ['id', 'token', 'salt'],
+        where: { email: req.body.username }
+    }).then(successCallback, errorCallback);
 }
 
 function checkSession(req, res, next) {
     var successCallback = function(result) {
-        req.accessToken = result;
+        if (result) {
+            req.accessToken = result.sessionKey;
+        }
 
         next();
     }
@@ -157,12 +147,15 @@ function checkSession(req, res, next) {
         next(error);
     }
 
-    var userInfo = {
-        username: req.body.username,
-        applicationToken: framework.common.parseAuthHeader(req.headers.authorization).token
-    }
-
-    dataAccess.user.session.exists(userInfo, successCallback, errorCallback);
+    accessLayer.Application.findOne({
+        where: { 
+            applicationToken: framework.common.parseAuthHeader(req.headers.authorization).token 
+        }
+    }).then(function(result) {
+        accessLayer.Session.findOne({
+            where: { appId: result.appId }
+        }).then(successCallback, errorCallback);
+    }, errorCallback);
 }
 
 function getUserAccess(req, res, next) {
@@ -193,13 +186,12 @@ function getUserAccess(req, res, next) {
             next(error);
         }
 
-        var userInfo = {
-            id: req.data,
-            applicationToken: framework.common.parseAuthHeader(req.headers.authorization).token
-        }
-        
-        // Este metodo do data-access deve chamar o next
-        dataAccess.user.getAccess(userInfo, successCallback, errorCallback);
+        accessLayer.databases.user.query('SELECT * FROM VIEW_USER_ACCESS WHERE USER_ID = :id AND APP_TOKEN = :token', {
+            mapToModel: true,
+            model: accessLayer.views.userAccess,
+            replacements: { id: req.data, token: framework.common.parseAuthHeader(req.headers.authorization).token }, 
+            type: accessLayer.databases.user.QueryTypes.SELECT
+        }).then(successCallback, errorCallback);
     }
 }
 
@@ -209,42 +201,42 @@ function formatResponse(req, res, next) {
     var results = req.data;
     var formattedResponse = formatUserData(results[0]);
     formattedResponse.application = {
-        id: results[0].APP_ID,
-        name: results[0].APP_NAME,
-        token: results[0].APP_TOKEN
+        id: results[0].appId,
+        name: results[0].appName,
+        token: results[0].appToken
     };
     formattedResponse.roles = [];
     formattedResponse.access = [];    
 
     for (var i = 0; i < results.length; i++) {
         // Roles de Acesso
-        if (formattedResponse.roles.indexOf(results[i].USER_ROLE) === -1) {
-            formattedResponse.roles.push(results[i].USER_ROLE);
+        if (formattedResponse.roles.indexOf(results[i].userRole) === -1) {
+            formattedResponse.roles.push(results[i].userRole);
         }
 
         // Menus de Acesso
         // Apenas adiciona os menus que não possuem sub-menus
         // Os sub-menus serao adicionados na expressao 'where' na property 'children'
-        if (results[i].MENU_PARENT_ID === null && !formattedResponse.access.any({ id: results[i].MENU_ID })) {
-            var subMenus = results.where({ MENU_PARENT_ID: results[i].MENU_ID }).select({
-                "id" : "MENU_ID",
-                "path" : "MENU_PATH",
-                "name" : "MENU_NAME",
-                "description" : "MENU_DESCRIPTION",
-                "parentId" : "MENU_PARENT_ID",
-                "displayOrder" : "MENU_DISPLAY_ORDER",
-                "icon" : "MENU_ICON",
+        if (results[i].menuParentId === null && !formattedResponse.access.any({ id: results[i].menuId })) {
+            var subMenus = results.where({ menuParentId: results[i].menuId }).select({
+                "id" : "menuId",
+                "path" : "menuPath",
+                "name" : "menuName",
+                "description" : "menuDescription",
+                "parentId" : "menuParentId",
+                "displayOrder" : "menuDisplayOrder",
+                "icon" : "menuIcon",
                 "children" : []
             });
             
             formattedResponse.access.push({
-                id: results[i].MENU_ID,
-                path: results[i].MENU_PATH,
-                name: results[i].MENU_NAME,
-                description: results[i].MENU_DESCRIPTION,
-                parentId: results[i].MENU_PARENT_ID,
-                displayOrder: results[i].MENU_DISPLAY_ORDER,
-                icon: results[i].MENU_ICON,
+                id: results[i].menuId,
+                path: results[i].menuPath,
+                name: results[i].menuName,
+                description: results[i].menuDescription,
+                parentId: results[i].menuParentId,
+                displayOrder: results[i].menuDisplayOrder,
+                icon: results[i].menuIcon,
                 children: subMenus
             });
         }
@@ -261,8 +253,16 @@ function createAccessToken(req, res, next) {
 
     global.CacheManager.set(accessToken, req.data, req.body.keepAlive ? Infinity : TIMEOUT);
 
-    dataAccess.user.session.delete(req.data);
-    dataAccess.user.session.create(req.data);
+    accessLayer.Session.destroy({ 
+        where: { userId: req.data.user.id } 
+    }).then(function() {
+        accessLayer.Session.create({
+            userId: req.data.user.id,             
+            appId: req.data.application.id,            
+            sessionKey: req.data.accessToken,
+            email: req.data.user.email
+        });
+    });
 
     res.json(req.data);
 
@@ -297,7 +297,9 @@ function logout(req, res, next) {
                 innerNextFunction('Error deleting session');
             };
 
-            dataAccess.user.session.delete(userData, successCallback, errorCallback);
+            accessLayer.Session.destroy({ 
+                where: { userId: userData.user.id } 
+            }).then(successCallback, errorCallback);
         } else {
             innerNextFunction('Token not found');
         }       
@@ -401,7 +403,7 @@ function list(req, res, next) {
         next(error);
     }
 
-    dataAccess.user.get(parameters, successCallback, errorCallback);
+    accessLayer.user.get(parameters, successCallback, errorCallback);
 }
 
 function insertUpdatePreValidation(req, res, next) {
@@ -455,5 +457,5 @@ function insertOrUpdate(req, res, next) {
     }
     
     // Este metodo do data-access deve chamar o next
-    dataAccess.user.insertOrUpdate(req.body, successCallback, errorCallback);
+    accessLayer.user.insertOrUpdate(req.body, successCallback, errorCallback);
 }
