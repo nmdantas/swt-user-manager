@@ -1,0 +1,15 @@
+language: node_js
+node_js:
+- '7'
+deploy:
+  provider: npm
+  email: n.moraes.dantas@gmail.com
+  api_key:
+    secure: sgPZQm5Q9ullq60YyEFqKzaz4hZc3ZNb+n/sJs+59RvAiYq12Rvt5ErTwzMU7oesw2I4Loel6Wd25BKeGZjG+5y1sgqcuNer/yP1f/GkjRgXEs304L3X0wIQk8tSJrLFz/l0eY5my5+CAOjNtDl+2bcRIpEc8iQPeDzr24DWPUP+TBljud2Hc1eOyo8ArxVGCzRFwQ1Wj+nrGFeqYFXsgIGU2W/99CrN32EI0HYnwl6h10FES1S3ibpdVlxdrHJj3sQu4VieqpJNvSHpZ+bd3KY35W/toGQBiblR4tgyWdas2qWn4ER9RANH15ax0YmXBuAl6hD3Bde5nzoicUcQx6YGPaceUYu8hnr/f5eNWxyonesF56ewRiK7dhDH//WP+cAJFea8GfomDvF/vsvPsA9LOCJIFQwFYdQms5sZ5aHabsF19HzOkIQeWMjfNgJ+rE2R9xJgE+LXf9a7vPn5evNGuWMU3+Pc523qNCLAjN9cF+xh4RjokmGcWA80LyW7PjOGtXqWXWsUFWhsDkqvSw/EiCV/RASy/GUrJ5DKbgwy4MzSDLBMyFGNXVWv/9VwYbx7N2tCjyV2c/HM8s6Jw6Vpl0nX3QZJ24A7tv1p+9jZgG2hvwIfW2PrJTsGjBOixBu9IflJQ6xu7W2l8bekJ6d5BApsQ4NeMtJoBgAB9Jk=
+cache:
+  directories:
+  - node_modules
+before_install:
+- npm rm --save-dev
+- test ! -d node_modules || npm prune
+- test ! -d node_modules || npm rebuild
