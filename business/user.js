@@ -107,7 +107,14 @@ function checkPassword(req, res, next) {
 
         var salt = result.salt;
         var hash = result.token;
-        var givenPassword = framework.security.signature.password(salt, req.body.password);
+        var givenPassword = null; 
+        
+        // Se houver um SALT significa que a senha esta criptografada
+        if (salt) {
+            givenPassword = framework.security.signature.password(salt, req.body.password);
+        } else {
+            givenPassword = req.body.password;
+        }
 
         // Verifica se o hash é compativel
         if (givenPassword === hash) {
