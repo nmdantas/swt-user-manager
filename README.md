@@ -1,2 +1,16 @@
-# swt-user-manager
-User manager framework for all SWT applications
+# SWT User Manager
+
+  [![NPM Version][npm-image]][downloads-url]
+  [![NPM Downloads][downloads-image]][downloads-url]
+
+O framework de gestão de usuário para qualquer aplicação SWT
+
+## Instalação
+```bash
+$ npm install swt-user-manager
+```
+
+[npm-image]: https://img.shields.io/npm/v/swt-user-manager.svg
+[npm-url]: https://npmjs.org/package/swt-user-manager.svg
+[downloads-image]: https://img.shields.io/npm/dm/swt-user-manager.svg.svg
+[downloads-url]: https://npmjs.org/package/swt-user-manager
