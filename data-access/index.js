@@ -25,7 +25,7 @@ var connectionPool = database.createPool(CONNECTION_CONFIG);
 
 var Sequelize = require('sequelize');
 
-var defaultDatabase = new Sequelize('swtdb_dev', process.env.DB_USER, process.env.DB_PASS, {
+var defaultDatabase = new Sequelize(process.env.DB_BASE_DEFAULT, process.env.DB_USER, process.env.DB_PASS, {
     host: process.env.DB_HOST,
     dialect: 'mysql',
     pool: {
@@ -34,7 +34,7 @@ var defaultDatabase = new Sequelize('swtdb_dev', process.env.DB_USER, process.en
     }
 });
 
-var userDatabase = new Sequelize(process.env.DB_BASE, process.env.DB_USER, process.env.DB_PASS, {
+var userDatabase = new Sequelize(process.env.DB_BASE_USER, process.env.DB_USER, process.env.DB_PASS, {
     host: process.env.DB_HOST,
     dialect: 'mysql',
     pool: {
