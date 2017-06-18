@@ -15,6 +15,8 @@ var framework   = require('swt-framework');
 router.post('/users/login', business.login);
 // Logout
 router.post('/users/logout', business.logout);
+// Refresh session
+router.post('/users/refresh', business.refresh);
 
 // Obtem todos usuarios
 router.get('/users', business.list);

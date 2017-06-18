@@ -25,6 +25,9 @@ module.exports = {
     logout: [
         logout
     ],
+    refresh: [
+        refreshSession
+    ],
     list: [
         list
     ],
@@ -313,6 +316,13 @@ function logout(req, res, next) {
     } else {
         innerNextFunction('Invalid Header');
     }
+}
+
+function refreshSession(req, res, next) {
+    var authHeader = framework.common.parseAuthHeader(req.headers.authorization);
+    var cache = global.CacheManager.get(authHeader.token); // Metodo get atualiza o cache
+
+    res.json(cache);
 }
 
 function list(req, res, next) {
