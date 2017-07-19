@@ -13,8 +13,10 @@ var framework   = require('swt-framework');
 
 // Login
 router.post('/users/login', business.login);
+router.post('/users/login/mobile', business.mobile.login);
 // Logout
 router.post('/users/logout', business.logout);
+router.post('/users/logout/mobile', business.logout);
 // Refresh session
 router.post('/users/refresh', business.refresh);
 

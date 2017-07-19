@@ -47,6 +47,16 @@ module.exports = {
         reset: [
             
         ]
+    },
+    mobile: {
+        login: [
+            preValidation,
+            checkPassword,
+            checkSession, 
+            getMobileUserAccess,
+            formatMobileResponse,
+            createAccessToken
+        ]
     }
 };
 
@@ -87,6 +97,43 @@ function formatUserData(result) {
     formattedResponse.user.address.longitude = result.addressLongitude;
 
     return formattedResponse;
+}
+
+function getUserAccessData(req, res, next, query, model) {
+    // Caso possua esta propriedade na requisicao significa que ja existe sessao    
+    if (req.accessToken && global.CacheManager.has(req.accessToken)) {
+        var sessionInfo = global.CacheManager.get(req.accessToken);
+
+        // Atualiza o Cache
+        global.CacheManager.set(req.accessToken, sessionInfo, req.body.keepAlive ? Infinity : TIMEOUT);
+
+        res.json(sessionInfo);
+    } else {
+        var successCallback = function(results) {
+            // Se nao houver retorno significa que o usuario não tem
+            // permissão para acessar a aplicação
+            if (results.length === 0) {
+                var error = new framework.models.SwtError({code: 'US008', httpCode: 403});
+
+                next(error);
+            } else {
+                req.data = results;
+                next();
+            }
+        }
+
+        var errorCallback = function (error) {
+            logManager.error(error, 'swtUserManager.userController.login');
+            next(error);
+        }
+
+        accessLayer.databases.user.query(query, {
+            mapToModel: true,
+            model: model,
+            replacements: { id: req.data, token: framework.common.parseAuthHeader(req.headers.authorization).token }, 
+            type: accessLayer.databases.user.QueryTypes.SELECT
+        }).then(successCallback, errorCallback);
+    }
 }
 
 function preValidation(req, res, next) {
@@ -169,40 +216,11 @@ function checkSession(req, res, next) {
 }
 
 function getUserAccess(req, res, next) {
-    // Caso possua esta propriedade na requisicao significa que ja existe sessao    
-    if (req.accessToken && global.CacheManager.has(req.accessToken)) {
-        var sessionInfo = global.CacheManager.get(req.accessToken);
+    getUserAccessData(req, res, next, 'SELECT * FROM VIEW_USER_ACCESS WHERE USER_ID = :id AND APP_TOKEN = :token', accessLayer.views.userAccess);
+}
 
-        // Atualiza o Cache
-        global.CacheManager.set(req.accessToken, sessionInfo, req.body.keepAlive ? Infinity : TIMEOUT);
-
-        res.json(sessionInfo);
-    } else {
-        var successCallback = function(results) {
-            // Se nao houver retorno significa que o usuario não tem
-            // permissão para acessar a aplicação
-            if (results.length === 0) {
-                var error = new framework.models.SwtError({code: 'US008', httpCode: 403});
-
-                next(error);
-            } else {
-                req.data = results;
-                next();
-            }
-        }
-
-        var errorCallback = function (error) {
-            logManager.error(error, 'swtUserManager.userController.login');
-            next(error);
-        }
-
-        accessLayer.databases.user.query('SELECT * FROM VIEW_USER_ACCESS WHERE USER_ID = :id AND APP_TOKEN = :token', {
-            mapToModel: true,
-            model: accessLayer.views.userAccess,
-            replacements: { id: req.data, token: framework.common.parseAuthHeader(req.headers.authorization).token }, 
-            type: accessLayer.databases.user.QueryTypes.SELECT
-        }).then(successCallback, errorCallback);
-    }
+function getMobileUserAccess(req, res, next) {
+    getUserAccessData(req, res, next, 'SELECT * FROM VIEW_USER_ACCESS_MOBILE WHERE USER_ID = :id AND APP_TOKEN = :token', accessLayer.views.userAccessMobile);
 }
 
 function formatResponse(req, res, next) {
@@ -251,6 +269,25 @@ function formatResponse(req, res, next) {
             });
         }
     }
+
+    req.data = formattedResponse;
+
+    next();
+}
+
+function formatMobileResponse(req, res, next) {
+   // Se chegou ate esse ponto, ao menos uma linha existe nos resultados
+    // Caso contrario seria resultado 403
+    var results = req.data;
+    var formattedResponse = formatUserData(results[0]);
+    formattedResponse.application = {
+        id: results[0].appId,
+        name: results[0].appName,
+        token: results[0].appToken
+    };
+
+    delete formattedResponse.details;
+    delete formattedResponse.address;
 
     req.data = formattedResponse;
 

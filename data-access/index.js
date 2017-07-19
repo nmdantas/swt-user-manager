@@ -46,19 +46,23 @@ var userDatabase = new Sequelize(process.env.DB_BASE_USER, process.env.DB_USER, 
 // Models
 var ApplicationSchema = defaultDatabase.import('./models/application');
 var UserSchema = userDatabase.import('./models/user');
+var UserApplicationSchema = userDatabase.import('./models/userApplication');
 var UserSessionSchema = userDatabase.import('./models/userSession');
 var ViewUserAccess = userDatabase.import('./models/viewUserAccess');
+var ViewUserAccessMobile = userDatabase.import('./models/viewUserAccessMobile');
 
 module.exports = {    
     user: userService(connectionPool),
     User: UserSchema,
+    UserApplication: UserApplicationSchema,
     Session: UserSessionSchema,
     Application: ApplicationSchema,
     databases: {
         user: userDatabase,
-        default: defaultDatabase        
+        default: defaultDatabase
     },
     views: {
-        userAccess: ViewUserAccess
+        userAccess: ViewUserAccess,
+        userAccessMobile: ViewUserAccessMobile
     }
 };
