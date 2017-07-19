@@ -4,8 +4,7 @@ node_js:
 deploy:
   provider: npm
   email: n.moraes.dantas@gmail.com
-  api_key:
-    secure: MlJomvCYCizV1Axv5tIxmnd5ET4U61gX6mRGs+/STXgp6/jwNN6wF+M7TJ2ajAe5JRan1s+rl0hthKzKFnSHWGv87IL+4oIDwviiuQLRAQ0RNrKkCBqlEJyguQaQIpgLKD4U1kOgWHSZbSi2BQcjQJJtuAkET+v/ZTnpk8EBgPxS7Dw26tg/XNMr2F1joNcEY09rTXLO2EgNCYLro3AuB57TKmsArY4Wu8dJ4Hh91YuwxVJzDIdv0U2jkfrjtFLskrJ5lCy4d/DAsryUO+KQTd8ZvQpAP/5HykJhs68Nt1UK3VcubCcQSDTVn+mdFnQIGJ3ikOdqwzyrDVRwk9c2YbXLAfDCP3OCDLnrZA0bMSGMbnNWk06TBcY5eLhx40sPEMIffSqiWbAEbjAs4siHpB00xd0LBjKLUuXs05HnfEFcWFsP8r2R8Pdz6/JrIjFv0ycWB69ydPUIe8HpIB86R8+9ixd/pIfSRZAiyZnAMYieXDzoySEoWFOpFCimp0h0WxhFiDCWsDOwYbefmq4jG9Ge9eCS3eRJ8Ja0UiHwYC8ymnvF6WqxUG8FV1uIAqQzofBMgIbU161fBN9HpjFpjcP3i/oIjCe1f6QifziKcDBFEp03NzqfBIKOIBxjx+5LgN1Yc2L8GE1/HU7TFuAeDxjR1bRWkGU51zMbHIxc5mU=
+  api_key: $NPM_API_KEY
 cache:
   directories:
   - node_modules

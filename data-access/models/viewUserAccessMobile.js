@@ -16,6 +16,12 @@ module.exports = function(sequelize, DataType) {
         userPassword: { field: 'USER_PASSWORD', type: DataType.STRING },
         userSalt: { field: 'USER_SALT', type: DataType.STRING },
 
+        userName: { field: 'USER_NAME', type: DataType.STRING },
+        userLastname: { field: 'USER_LASTNAME', type: DataType.STRING },
+        userNickname: { field: 'USER_NICKNAME', type: DataType.STRING },
+        userBirthday: { field: 'USER_BIRTHDAY', type: DataType.DATE },
+        userDocument: { field: 'USER_DOCUMENT', type: DataType.STRING },
+
         userAppStatus: { field: 'USER_APP_STATUS', type: DataType.INTEGER },
 
         appId: { field: 'APP_ID', type: DataType.BIGINT },

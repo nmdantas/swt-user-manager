@@ -1,6 +1,6 @@
 {
   "name": "swt-user-manager",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "User manager framework for any SWT applications",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,6 @@
   "dependencies": {
     "body-parser": "^1.17.1",
     "sequelize": "^3.30.4",
-    "swt-framework": "^0.1.4"
+    "swt-framework": "^0.2.0"
   }
 }

@@ -210,7 +210,7 @@ function checkSession(req, res, next) {
         }
     }).then(function(result) {
         accessLayer.Session.findOne({
-            where: { appId: result.appId }
+            where: { appId: result && result.appId }
         }).then(successCallback, errorCallback);
     }, errorCallback);
 }
@@ -286,8 +286,7 @@ function formatMobileResponse(req, res, next) {
         token: results[0].appToken
     };
 
-    delete formattedResponse.details;
-    delete formattedResponse.address;
+    delete formattedResponse.user.address;
 
     req.data = formattedResponse;
 
