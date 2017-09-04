@@ -24,12 +24,14 @@ router.post('/users/refresh', business.refresh);
 router.get('/users', business.list);
 // Cria um novo usuario
 router.post('/users', framework.security.authorize('Admin'), business.create);
+router.post('/users/mobile', business.mobile.create);
 
 // Obtem o usuario especifico
 router.get('/users/:id', business.list);
 router.get('/users/:id/applications/:token?', business.list);
 // Atualiza o usuario especifico
-router.put('/users/:id', business.update); 
+router.put('/users/:id', business.update);
+router.put('/users/:id/mobile', business.mobile.update);
 // Apaga/Desativa o usuario especifico
 router.delete('/users/:id', business.delete);
 

@@ -56,7 +56,15 @@ module.exports = {
             getMobileUserAccess,
             formatMobileResponse,
             createAccessToken
-        ]
+        ],
+        create:[
+            insertUpdateMobilePreValidation,
+            insertOrUpdate
+        ],
+        update: [
+            insertUpdateMobilePreValidation,
+            insertOrUpdate
+        ],
     }
 };
 
@@ -480,15 +488,29 @@ function insertUpdatePreValidation(req, res, next) {
     }
 }
 
+function insertUpdateMobilePreValidation(req, res, next) {
+    var constraints = framework.common.validation.requiredFor([
+        'firstName',
+        'lastName',
+        'email',
+        'password'
+    ]);
+
+    var validationErrors = framework.common.validation.validate(req.body, constraints);
+
+    if (validationErrors) {
+        var error = new framework.models.SwtError({code: 'US004', httpCode: 400, details: validationErrors});
+
+        next(error);
+    } else {
+        next();
+    }
+}
+
 function insertOrUpdate(req, res, next) {
     var successCallback = function(results) {
         res.json({
-            links: [
-                {
-                    rel: 'self',
-                    href: '/api/v0/users/' + results.ID
-                }
-            ]
+            id: results.ID || req.body.id
         });
 
         next();
@@ -503,10 +525,16 @@ function insertOrUpdate(req, res, next) {
     req.body.id = req.params.id;
 
     // Verifica se deve criptografar a senha
-    // Apenas criptografa a senha se for um insert
-    if (!req.body.id) {
+    // Apenas criptografa a senha se for um insert 
+    // ou se a senha for passada para ser atualizada
+    if (!req.body.id || req.body.password) {
         req.body.salt = framework.security.signature.salt();
         req.body.password = framework.security.signature.password(req.body.salt, req.body.password);
+    }
+
+    // Nos casos de INSERT já será feita a associação à aplicação
+    if (!req.body.id) {
+        req.body.appToken = framework.common.parseAuthHeader(req.headers.authorization).token;
     }
     
     // Este metodo do data-access deve chamar o next

@@ -1,6 +1,6 @@
 {
   "name": "swt-user-manager",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "User manager framework for any SWT applications",
   "main": "index.js",
   "scripts": {

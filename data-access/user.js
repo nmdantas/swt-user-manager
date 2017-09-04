@@ -237,15 +237,15 @@ function insertOrUpdate(user, successCallback, errorCallback) {
             return;
         }
 
-        var query = 'CALL swtuserdb_dev.SP_INSERT_UPDATE_USER(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'
+        var query = 'CALL swtuserdb_dev.SP_INSERT_UPDATE_USER(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'
 
-        connection.query(query, [user.id, user.email, 0, user.salt, user.password, user.photo, user.firstName, user.lastName, user.nickName, user.birthday, user.document], function (error, results, fields) {
+        connection.query(query, [user.id, user.email, 0, user.salt, user.password, user.photo, user.firstName, user.lastName, user.nickname, user.birthday, user.document, user.appToken], function (error, results, fields) {
             connection.release();
 
             if (error) {
                 errorCallback(error);
             } else {
-                successCallback(results);
+                successCallback(results[0] ? results[0][0] : {id : user.id});
             }
         });
     });
