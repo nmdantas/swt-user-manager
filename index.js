@@ -35,6 +35,14 @@ function standalone(port) {
     app.use(bodyParser.json());
     app.use(framework.security.enablePreflight);
 
+    // Rota default
+    app.all('/api/v0', function(req, res) {
+        res.json({
+            api: process.env.APPLICATION_NAME,
+            version: process.env.APPLICATION_VERSION
+        });
+    });    
+
     // Rotas
     app.use('/api/v0', controller);
 
@@ -43,5 +51,5 @@ function standalone(port) {
 
     app.listen(port || 8080);
     // framework.logger.debug('Standalone Server Started', 'swt-user-manager');
-    console.log('Standalone Server Started...');
+    console.log('Standalone Server Started on Port ' + (port || 8080));
 }

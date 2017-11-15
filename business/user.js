@@ -80,29 +80,29 @@ function formatUserData(result) {
         }
     };
 
-    formattedResponse.user.id = result.userId;
-    formattedResponse.user.email = result.userEmail;
-    formattedResponse.user.photo = result.userPhoto;
-    formattedResponse.user.creation = result.userCreation;
+    formattedResponse.user.id = result.userId || result.USER_ID;
+    formattedResponse.user.email = result.userEmail || result.USER_EMAIL;
+    formattedResponse.user.photo = result.userPhoto || result.USER_PHOTO;
+    formattedResponse.user.creation = result.userCreation || result.USER_CREATION;
     
-    formattedResponse.user.details.name = result.userName;
-    formattedResponse.user.details.lastname = result.userLastname;
-    formattedResponse.user.details.nickname = result.userNickname;
-    formattedResponse.user.details.birthday = result.userBirthday;
-    formattedResponse.user.details.document = result.userDocument;
-    formattedResponse.user.details.photo = result.userPhoto;
-    formattedResponse.user.details.creation = result.userCreation;
-
-    formattedResponse.user.address.zipCode = result.addressZipcode;
-    formattedResponse.user.address.place = result.addressAddress;
-    formattedResponse.user.address.district = result.addressDistrict;
-    formattedResponse.user.address.city = result.addressCity;
-    formattedResponse.user.address.state = result.addressState;
-    formattedResponse.user.address.country = result.addressCountry;    
-    formattedResponse.user.address.number = result.addressNumber;
-    formattedResponse.user.address.complement = result.addressComplement;
-    formattedResponse.user.address.latitude = result.addressLatitude;
-    formattedResponse.user.address.longitude = result.addressLongitude;
+    formattedResponse.user.details.name = result.userName || result.USER_NAME;
+    formattedResponse.user.details.lastname = result.userLastname || result.USER_LASTNAME;
+    formattedResponse.user.details.nickname = result.userNickname || result.USER_NICKNAME;
+    formattedResponse.user.details.birthday = result.userBirthday || result.USER_BIRTHDAY;
+    formattedResponse.user.details.document = result.userDocument || result.USER_DOCUMENT;
+    formattedResponse.user.details.photo = result.userPhoto || result.USER_PHOTO;
+    formattedResponse.user.details.creation = result.userCreation || result.USER_CREATION;
+    
+    formattedResponse.user.address.zipCode = result.addressZipcode || result.ADDRESS_ZIPCODE;
+    formattedResponse.user.address.place = result.addressAddress || result.ADDRESS_ADDRESS;
+    formattedResponse.user.address.district = result.addressDistrict || result.ADDRESS_DISTRICT;
+    formattedResponse.user.address.city = result.addressCity || result.ADDRESS_CITY;
+    formattedResponse.user.address.state = result.addressState || result.ADDRESS_STATE;
+    formattedResponse.user.address.country = result.addressCountry || result.ADDRESS_COUNTRY;    
+    formattedResponse.user.address.number = result.addressNumber || result.ADDRESS_NUMBER;
+    formattedResponse.user.address.complement = result.addressComplement || result.ADDRESS_COMPLEMENT;
+    formattedResponse.user.address.latitude = result.addressLatitude || result.ADDRESS_LATITUDE;
+    formattedResponse.user.address.longitude = result.addressLongitude || result.ADDRESS_LONGITUDE;
 
     return formattedResponse;
 }
@@ -372,8 +372,10 @@ function refreshSession(req, res, next) {
 function list(req, res, next) {
     var auth = framework.common.parseAuthHeader(req.headers.authorization);
     var parameters = {
-        user: req.params.id,
-        token: null        
+        user: req.params.id,        
+        email: req.query.email,
+        name: req.query.name,
+        token: null
     };
 
     // Codição mandatória, para a rota que especificada, ignora o token do usuario logado e da aplicação
@@ -409,7 +411,7 @@ function list(req, res, next) {
         var formattedResponse = {};
 
         // Verifica se deve apenas retornar os dados da aplicação
-        if (req.route.path === '/:id/applications/:token?') {
+        if (req.route.path === '/users/:id/applications/:token?') {
             formattedResponse = [];
 
             for (var i = 0; i < results.length; i++) {
@@ -425,7 +427,7 @@ function list(req, res, next) {
             }
         } 
         // Todos os usuários
-        else if (req.route.path === '/') {
+        else if (req.route.path === '/users') {
             formattedResponse = [];
 
             // Usuários
@@ -540,3 +542,32 @@ function insertOrUpdate(req, res, next) {
     // Este metodo do data-access deve chamar o next
     accessLayer.user.insertOrUpdate(req.body, successCallback, errorCallback);
 }
+
+function getUserApplicationData(req, res, next) {
+    var successCallback = function(results) {
+        // Se nao houver retorno significa que o usuario não tem
+        // permissão para acessar a aplicação
+        if (results.length === 0) {
+            var error = new framework.models.SwtError({code: 'US008', httpCode: 403});
+
+            next(error);
+        } else {
+            req.data = results;
+            next();
+        }
+    }
+
+    var errorCallback = function (error) {
+        logManager.error(error, 'swtUserManager.userController.login');
+        next(error);
+    }
+
+    accessLayer.databases.user.query('SELECT * FROM VIEW_USER_ACCESS_MOBILE WHERE USER_EMAIL = :email', {
+        mapToModel: true,
+        model: accessLayer.views.userAccessMobile,
+        replacements: { email: req.data }, 
+        type: accessLayer.databases.user.QueryTypes.SELECT
+    }).then(successCallback, errorCallback);
+}
+
+

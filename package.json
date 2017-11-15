@@ -1,10 +1,10 @@
 {
   "name": "swt-user-manager",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "User manager framework for any SWT applications",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node index.js --standalone",
     "standalone": "node index.js --standalone",
     "deploy": "gcloud app deploy app.yaml"
   },

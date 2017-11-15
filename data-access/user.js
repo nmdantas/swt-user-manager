@@ -72,9 +72,11 @@ function get(parameters, successCallback, errorCallback) {
                     '       ADDRESS_LONGITUDE ' +
                     'FROM swtuserdb_dev.VIEW_USER_INFO ' +
                     'WHERE USER_ID = COALESCE(?, USER_ID) ' +
-                        'AND APP_TOKEN = COALESCE(?, APP_TOKEN)'
+                        'AND APP_TOKEN = COALESCE(?, APP_TOKEN) ' +
+                        'AND USER_EMAIL = COALESCE(?, USER_EMAIL) ' +
+                        'AND USER_NAME LIKE CONCAT("%", IFNULL(?, USER_NAME), "%")'
 
-        connection.query(query, [parameters.user, parameters.token], function (error, results, fields) {
+        connection.query(query, [parameters.user, parameters.token, parameters.email, parameters.name], function (error, results, fields) {
             connection.release();
 
             if (error) {
