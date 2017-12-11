@@ -5,12 +5,6 @@ deploy:
   - provider: npm
     email: n.moraes.dantas@gmail.com
     api_key: $NPM_API_KEY
-  - provider: openshift
-    user: n.moraes.dantas@gmail.com
-    password: $OPEN_SHIFT_PASSWORD
-    domain: https://manage.openshift.com
-    app:
-      master: swt-user-manager
 cache:
   directories:
   - node_modules
